@@ -87,10 +87,10 @@ td{padding:8px 4px;border-bottom:2px dashed var(--line)}td:last-child{text-align
 <section id="sJoin" class="card">
   <h2>Sorteia um tema, corre contra o relógio, todo mundo desenha junto.</h2>
   <form id="fJoin">
-    <label for="nick">Seu apelido</label>
-    <input id="nick" maxlength="16" autocomplete="nickname" placeholder="ex.: Diego" required>
+    <label for="nick">Seu nome ou apelido</label>
+    <input id="nick" maxlength="16" autocomplete="nickname" placeholder="Escreva seu nome ou apelido" required>
     <label for="code">Código da sala</label>
-    <input id="code" maxlength="20" value="amigos" autocapitalize="none" autocomplete="off">
+    <input id="code" maxlength="20" autocapitalize="none" autocomplete="off">
     <label>Como jogar</label>
     <div class="modes">
       <button type="button" class="mode on" data-m="on">Online<small>Desenhos e votos chegam no celular de todo mundo.</small></button>
@@ -164,14 +164,15 @@ const fmt=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+":
 const okImg=u=>typeof u==="string"&&u.length<400000&&/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(u);
 const clean=s=>String(s??"").replace(/[\u0000-\u001f]/g,"").slice(0,16)||"Alguém";
 
-let mode="on",inGame=false,code="amigos",net=null,selfId="eu",myP={},myG=null,lastG=null,offDur=120,tickT=null,hbAt=0;
+let mode="on",inGame=false,code="",net=null,selfId="eu",myP={},myG=null,lastG=null,offDur=120,tickT=null,hbAt=0;
 const peers=new Map(),hostG=new Map(),offsets=new Map(),arts={};
 
 /* ---------- entrada ---------- */
 try{$("#nick").value=localStorage.getItem("rr-nick")||""}catch(e){}
-const h0=decodeURIComponent(location.hash.slice(1));if(h0)$("#code").value=h0;
+const h0=decodeURIComponent(location.hash.slice(1));$("#code").value=h0||randCode();
 $$(".mode").forEach(b=>b.onclick=()=>{mode=b.dataset.m;$$(".mode").forEach(x=>x.classList.toggle("on",x===b));$("#offOpts").classList.toggle("hide",mode!=="off")});
-const sanitizeCode=v=>(v.trim().toLowerCase().normalize("NFD").replace(/[^a-z0-9]/g,"")||"amigos").slice(0,20);
+const randCode=()=>Array.from(crypto.getRandomValues(new Uint8Array(4)),b=>"abcdefghjkmnpqrstuvwxyz23456789"[b%31]).join("");
+const sanitizeCode=v=>(v.trim().toLowerCase().normalize("NFD").replace(/[^a-z0-9]/g,"")||randCode()).slice(0,20);
 
 $("#fJoin").addEventListener("submit",async e=>{
   e.preventDefault();
