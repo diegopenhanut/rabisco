@@ -1,4 +1,4 @@
-# Rabisco Rápido
+# Sala de Rabiscos da Mestra Ludmila
 
 Jogo de desenho: sorteia um tema, todo mundo desenha ao mesmo tempo (1–3 min) e vota no melhor.
 

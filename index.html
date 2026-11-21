@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#ffd23f">
-<title>Rabisco Rápido</title>
+<title>Sala de Rabiscos da Mestra Ludmila</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -82,7 +82,7 @@ td{padding:8px 4px;border-bottom:2px dashed var(--line)}td:last-child{text-align
 </head>
 <body>
 <div class="wrap">
-<header><h1>Rabisco Rápido</h1><span class="pill" id="status">pronto</span></header>
+<header><h1>Sala de Rabiscos da Mestra Ludmila</h1><span class="pill" id="status">pronto</span></header>
 
 <section id="sJoin" class="card">
   <h2>Sorteia um tema, corre contra o relógio, todo mundo desenha junto.</h2>
@@ -206,7 +206,7 @@ function alertBox(msg){let p=$("#joinErr");if(!p){p=document.createElement("p");
 function leave(){try{net&&net.room.leave()}catch(e){}net=null;inGame=false;myG=null;lastG=null;peers.clear();hostG.clear();clearInterval(tickT);$("#status").textContent="pronto";show("sJoin")}
 $$(".leave").forEach(b=>b.onclick=leave);
 $("#invite").onclick=async()=>{const url=location.href.split("#")[0]+"#"+code;
-  try{if(navigator.share){await navigator.share({title:"Rabisco Rápido",text:"Bora desenhar! Sala: "+code,url});return}}catch(e){return}
+  try{if(navigator.share){await navigator.share({title:"Sala de Rabiscos da Mestra Ludmila",text:"Bora desenhar! Sala: "+code,url});return}}catch(e){return}
   try{await navigator.clipboard.writeText(url);$("#invite").textContent="Link copiado!"}catch(e){$("#invite").textContent=url}
   setTimeout(()=>$("#invite").textContent="Convidar (copiar link)",2500)};
 
