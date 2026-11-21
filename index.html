@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#ffd23f">
+<title>Rabisco Rápido</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@700&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: brincalhão, festa entre amigos, rápido.
+   IDEA: um bloco de desenho de papel com fita adesiva, sob um cronômetro de cozinha.
+   PICTURE: o próprio quadro de desenho, grande, com o tema escrito à mão em cima.
+   COLOUR and TYPE: amarelo-marca-texto dominante, tinta azul-noite, acento tomate; Gaegu (letra à mão) + Nunito.
+   LAYOUT: uma tela por fase — entrar, sala, desenhar, votar, resultado; empilha no celular. */
+:root{color-scheme:light dark;--bg:light-dark(#ffd23f,#17162b);--paper:light-dark(#fff,#24233f);--ink:light-dark(#1d1b2f,#f4f1ff);--soft:light-dark(#5b587a,#b9b5dc);--acc:#ff4f64;--line:light-dark(#1d1b2f,#4a4870);--chip:light-dark(#fff3c4,#2f2d52)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Nunito,system-ui,sans-serif;overflow-x:clip;min-height:100vh}
+.wrap{max-width:900px;margin:0 auto;padding:16px max(4vw,14px) 40px}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+h1,.hand{font-family:Gaegu,cursive;font-weight:700;letter-spacing:.2px}
+h1{font-size:36px;line-height:1;margin:0}
+h2{font-family:Gaegu,cursive;font-size:30px;line-height:1.05;margin:0 0 10px}
+.pill{background:var(--paper);border:2px solid var(--line);border-radius:999px;padding:4px 12px;font-size:14px;font-weight:700;white-space:nowrap}
+.card{background:var(--paper);border:3px solid var(--line);border-radius:18px;padding:20px;box-shadow:6px 6px 0 var(--line)}
+.hide{display:none!important}
+label{display:block;font-weight:800;font-size:14px;margin:12px 0 4px}
+input,select{width:100%;font:inherit;font-size:16px;padding:12px 14px;border:2px solid var(--line);border-radius:12px;background:var(--chip);color:var(--ink)}
+button{font:inherit;font-weight:800;min-height:44px;padding:10px 18px;border-radius:12px;border:2px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer}
+button.go{background:var(--acc);color:#fff;border-color:var(--line);box-shadow:3px 3px 0 var(--line);font-size:18px}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+button:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.note{font-size:14px;color:var(--soft);margin:10px 0 0}
+.players{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.pl{display:flex;align-items:center;gap:6px;background:var(--chip);border:2px solid var(--line);border-radius:999px;padding:4px 12px 4px 6px;font-weight:700;font-size:15px}
+.dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);flex:none}
+.pl.busy .dot{animation:pulse 1s infinite alternate}
+@keyframes pulse{to{transform:scale(.7)}}
+.top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:end;margin-bottom:10px}
+.theme{font-family:Gaegu,cursive;font-size:clamp(30px,7vw,48px);line-height:1.02;margin:0;text-wrap:balance}
+.lbl{font-size:13px;font-weight:800;color:var(--soft)}
+.timer{font-family:Gaegu,cursive;font-size:clamp(38px,9vw,56px);line-height:1;background:var(--paper);border:3px solid var(--line);border-radius:16px;padding:4px 14px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.timer.hot{background:var(--acc);color:#fff}
+.bar{height:8px;background:var(--chip);border:2px solid var(--line);border-radius:9px;overflow:hidden;margin-bottom:10px}
+.bar i{display:block;height:100%;background:var(--acc);width:100%}
+.pad{position:relative;aspect-ratio:4/3;width:100%;max-height:calc(100vh - 290px);margin:0 auto;background:#fff;border:3px solid var(--line);border-radius:10px;box-shadow:6px 6px 0 var(--line);touch-action:none}
+.pad canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:7px;cursor:crosshair}
+.pad.done::after{content:"Tempo esgotado!";position:absolute;inset:0;display:grid;place-items:center;font:700 40px Gaegu,cursive;color:#1d1b2f;background:#ffffffb0;border-radius:7px}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px}
+.sw{width:38px;height:38px;min-height:38px;padding:0;border-radius:50%;border:3px solid var(--line)}
+.sw.on{outline:3px solid var(--acc);outline-offset:2px}
+.sz{width:44px;padding:0;display:grid;place-items:center}
+.sz i{display:block;border-radius:50%;background:var(--ink)}
+.sz.on,.tl.on{background:var(--ink);color:var(--paper)}.sz.on i{background:var(--paper)}
+.sep{flex:1}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:16px;margin-top:12px}
+.art{background:var(--paper);border:3px solid var(--line);border-radius:14px;padding:8px;text-align:left;box-shadow:4px 4px 0 var(--line);display:block;width:100%;min-height:0}
+.art img,.art .wait{display:block;width:100%;aspect-ratio:4/3;border-radius:8px;background:#fff;border:1px solid var(--line)}
+.art .wait{display:grid;place-items:center;color:#5b587a;font-weight:700;font-size:14px}
+.art b{display:flex;justify-content:space-between;gap:8px;padding:6px 4px 0;font-size:15px}
+.art.mine{opacity:.85;cursor:default}
+.art.voted{outline:4px solid var(--acc);outline-offset:3px}
+.win{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:20px;align-items:start}
+.win img{width:100%;aspect-ratio:4/3;background:#fff;border:3px solid var(--line);border-radius:12px;box-shadow:6px 6px 0 var(--line)}
+table{width:100%;border-collapse:collapse;font-size:16px}
+td{padding:8px 4px;border-bottom:2px dashed var(--line)}td:last-child{text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
+.big{font-size:20px}
+@media(max-width:600px){.win{grid-template-columns:1fr}.top{grid-template-columns:1fr auto}.card{padding:16px}h1{font-size:30px}}
+@media(prefers-reduced-motion:reduce){.pl.busy .dot{animation:none}}
+.modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:6px}
+.mode{text-align:left;padding:12px 14px;line-height:1.3}
+.mode small{display:block;font-weight:400;color:var(--soft);font-size:13px;margin-top:2px}
+.mode.on{background:var(--ink);color:var(--paper)}.mode.on small{color:var(--paper);opacity:.8}
+.show{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:20px;align-items:start}
+.show img{width:100%;aspect-ratio:4/3;background:#fff;border:3px solid var(--line);border-radius:12px;box-shadow:6px 6px 0 var(--line)}
+@media(max-width:600px){.modes,.show{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><h1>Rabisco Rápido</h1><span class="pill" id="status">pronto</span></header>
+
+<section id="sJoin" class="card">
+  <h2>Sorteia um tema, corre contra o relógio, todo mundo desenha junto.</h2>
+  <form id="fJoin">
+    <label for="nick">Seu apelido</label>
+    <input id="nick" maxlength="16" autocomplete="nickname" placeholder="ex.: Diego" required>
+    <label for="code">Código da sala</label>
+    <input id="code" maxlength="20" value="amigos" autocapitalize="none" autocomplete="off">
+    <label>Como jogar</label>
+    <div class="modes">
+      <button type="button" class="mode on" data-m="on">Online<small>Desenhos e votos chegam no celular de todo mundo.</small></button>
+      <button type="button" class="mode" data-m="off">Sem internet<small>Mesmo tema pelo relógio; cada um mostra a tela.</small></button>
+    </div>
+    <div id="offOpts" class="hide">
+      <label for="offDur">Tempo para desenhar</label>
+      <select id="offDur"><option value="60">1 minuto</option><option value="120" selected>2 minutos</option><option value="180">3 minutos</option></select>
+      <p class="note">Todos precisam usar o mesmo código e o mesmo tempo. As rodadas começam sozinhas, alinhadas pelo relógio do celular.</p>
+    </div>
+    <div class="row" style="margin-top:16px"><button class="go" type="submit">Entrar</button></div>
+  </form>
+</section>
+
+<section id="sLobby" class="card hide">
+  <div class="row" style="justify-content:space-between"><h2 id="lobbyTitle">Sala</h2><button class="leave" type="button">Sair</button></div>
+  <div class="lbl">Na sala agora</div>
+  <div class="players" id="lobbyPlayers"></div>
+  <p class="note" id="lookNote">Procurando amigos na sala… pode levar alguns segundos.</p>
+  <div class="row"><button id="invite" type="button">Convidar (copiar link)</button></div>
+  <div id="hostBox">
+    <label for="dur">Tempo para desenhar</label>
+    <select id="dur"><option value="60">1 minuto</option><option value="120" selected>2 minutos</option><option value="180">3 minutos</option></select>
+    <div class="row" style="margin-top:14px"><button class="go" id="start" type="button">Sortear tema e começar</button></div>
+  </div>
+  <p class="note" id="waitHost">Esperando quem está com ★ começar a rodada…</p>
+</section>
+
+<section id="sDraw" class="hide">
+  <div class="top">
+    <div><div class="lbl" id="drawLbl">Desenhe:</div><p class="theme" id="theme">—</p></div>
+    <div class="timer" id="timer">2:00</div>
+  </div>
+  <div class="bar"><i id="barFill"></i></div>
+  <div class="pad" id="pad"><canvas id="cv" width="800" height="600"></canvas></div>
+  <div class="tools" id="tools"></div>
+  <div class="players" id="drawPlayers"></div>
+</section>
+
+<section id="sVote" class="hide">
+  <div class="top"><div><div class="lbl">Tema: <span id="vTheme"></span></div><h2 style="margin:0">Vote no melhor desenho</h2></div><div class="timer" id="vTimer">0:45</div></div>
+  <p class="note" id="vNote"></p>
+  <div class="gal" id="gal"></div>
+</section>
+
+<section id="sResult" class="card hide">
+  <h2 id="rTitle">Resultado</h2>
+  <div class="win"><div id="rArt"></div><div><div class="lbl">Placar da sala</div><table id="rTable"></table></div></div>
+  <div class="row" style="margin-top:18px"><button class="go" id="next" type="button">Próxima rodada</button><button class="save" type="button">Salvar meu desenho</button><button class="leave" type="button">Sair</button></div>
+  <p class="note" id="rWait">Esperando a próxima rodada…</p>
+</section>
+
+<section id="sShow" class="card hide">
+  <h2>Mostre para a galera!</h2>
+  <div class="show"><div id="shArt"></div><div><div class="lbl">Tema era</div><p class="theme" id="shTheme"></p><div class="lbl" style="margin-top:14px">Próxima rodada em</div><div class="timer" id="shTimer" style="display:inline-block">1:00</div></div></div>
+  <div class="row" style="margin-top:18px"><button class="save" type="button">Salvar meu desenho</button><button class="leave" type="button">Sair</button></div>
+</section>
+</div>
+
+<script>
+{
+const TEMAS=["Gato de óculos","Pizza voadora","Dinossauro de patins","Casa na árvore","Astronauta na praia","Polvo cozinheiro","Castelo de areia","Robô apaixonado","Vaca na lua","Bicicleta","Vulcão em erupção","Sereia","Foguete","Girafa de cachecol","Pinguim no deserto","Fantasma tímido","Dragão dormindo","Sorvete derretendo","Guarda-chuva","Tubarão de gravata","Ônibus escolar","Cachorro-quente","Abacaxi com coroa","Mágico tirando coelho","Farol à noite","Elefante equilibrista","Navio pirata","Unicórnio","Jacaré tocando violão","Cacto abraçando","Bolo de aniversário","Cobra de chapéu","Disco voador","Caracol veloz","Bombeiro","Montanha-russa","Coruja lendo","Peixe no aquário","Boneco de neve no verão","Caveira pirata","Tartaruga ninja","Avião de papel","Árvore de Natal","Panda comendo bambu","Super-herói gordinho","Ovo frito","Cachorro passeando o dono","Rei sem coroa","Bruxa na vassoura","Leão cabeleireiro","Hipopótamo bailarino","Sapo príncipe","Igreja","Torre Eiffel","Cristo Redentor","Açaí","Feijoada","Futebol na chuva","Capivara relaxando","Arara colorida","Carnaval","Praia lotada","Tatu-bola","Mico-leão-dourado","Fusca","Churrasco","Pão de queijo","Rede na varanda","Coxinha","Brigadeiro","Saci","Curupira","Mula sem cabeça","Corrida de rua","Medalha de ouro","Tênis de corrida","Violão","Relógio derretendo","Óculos escuros","Celular sem bateria","Wi-Fi caindo","Gato no teclado","Café da manhã","Escova de dentes","Alienígena turista","Zumbi vegetariano","Vampiro na praia","Múmia desenrolando","Galinha astronauta","Porco voando","Baleia no céu","Nuvem chorando","Sol de óculos","Arco-íris","Tempestade","Iglu","Camelo","Pirâmide","Sapato perdido","Mochila","Lâmpada com ideia","Ímã","Microscópio","Ampulheta","Balão de ar quente","Trem","Helicóptero","Submarino","Patinete","Skate","Prancha de surfe","Pipoca","Hambúrguer gigante","Sushi","Melancia","Banana escorregando","Abelha trabalhando","Formiga carregando folha","Borboleta","Joaninha","Minhoca de óculos","Esquilo guardando nozes","Raposa","Lobo uivando","Urso de pijama"];
+const COLORS=["#1d1b2f","#ff4f64","#ff9f1c","#ffd23f","#2ec4b6","#3a86ff","#8338ec","#6b4226","#7bd389","#ffffff"];
+const PCOL=["#ff4f64","#3a86ff","#2ec4b6","#ff9f1c","#8338ec","#7bd389","#f15bb5","#00bbf9"];
+const TRYSTERO="https://esm.run/trystero@0.21.6";
+const BREAK=60;
+const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const hash=s=>{let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0};
+const fmt=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
+const okImg=u=>typeof u==="string"&&u.length<400000&&/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(u);
+const clean=s=>String(s??"").replace(/[\u0000-\u001f]/g,"").slice(0,16)||"Alguém";
+
+let mode="on",inGame=false,code="amigos",net=null,selfId="eu",myP={},myG=null,lastG=null,offDur=120,tickT=null,hbAt=0;
+const peers=new Map(),hostG=new Map(),offsets=new Map(),arts={};
+
+/* ---------- entrada ---------- */
+try{$("#nick").value=localStorage.getItem("rr-nick")||""}catch(e){}
+const h0=decodeURIComponent(location.hash.slice(1));if(h0)$("#code").value=h0;
+$$(".mode").forEach(b=>b.onclick=()=>{mode=b.dataset.m;$$(".mode").forEach(x=>x.classList.toggle("on",x===b));$("#offOpts").classList.toggle("hide",mode!=="off")});
+const sanitizeCode=v=>(v.trim().toLowerCase().normalize("NFD").replace(/[^a-z0-9]/g,"")||"amigos").slice(0,20);
+
+$("#fJoin").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const n=clean($("#nick").value.trim()||"Jogador");code=sanitizeCode($("#code").value);
+  try{localStorage.setItem("rr-nick",n)}catch(e){}
+  myP={n,t:Date.now()};inGame=true;
+  if(mode==="off"){offDur=+$("#offDur").value||120;$("#status").textContent="sem internet · sala "+code}
+  else{
+    $("#status").textContent="conectando…";
+    try{
+      const {joinRoom,selfId:sid}=await import(TRYSTERO);selfId=sid;
+      const room=joinRoom({appId:"rabisco-rapido-diegopenhanut"},"sala-"+code);
+      const [sMe,gMe]=room.makeAction("me"),[sSt,gSt]=room.makeAction("st"),[sArt,gArt]=room.makeAction("art");
+      net={room,sMe,sSt,sArt};
+      gMe((d,id)=>{if(!d||typeof d!=="object")return;peers.set(id,{n:clean(d.n),t:+d.t||Date.now(),d:typeof d.d==="string"?d.d:null,v:d.v&&typeof d.v==="object"?{r:String(d.v.r),p:String(d.v.p)}:null});update()});
+      gSt((g,id)=>{if(!g||typeof g!=="object"||typeof g.id!=="string")return;hostG.set(id,g);if(typeof g.hb==="number")offsets.set(id,g.hb-Date.now());update()});
+      gArt((d,id)=>{if(d&&typeof d.r==="string"&&okImg(d.u)){(arts[d.r]??={})[id]=d.u;render()}});
+      room.onPeerJoin(id=>{sMe(myP,id);if(isHost()&&myG)sSt({...myG,hb:Date.now()},id);const r=G()?.id,u=r&&arts[r]?.[selfId];if(u)sArt({r,u},id)});
+      room.onPeerLeave(id=>{peers.delete(id);hostG.delete(id);update()});
+    }catch(err){
+      inGame=false;$("#status").textContent="sem conexão";
+      alertBox("Não consegui carregar o modo online. Tente o modo “Sem internet”.");return;
+    }
+    try{history.replaceState(null,"","#"+code)}catch(e){}
+  }
+  $("#lobbyTitle").textContent="Sala “"+code+"”";
+  clearInterval(tickT);tickT=setInterval(tick,500);update();
+});
+function alertBox(msg){let p=$("#joinErr");if(!p){p=document.createElement("p");p.id="joinErr";p.className="note";p.style.color="var(--acc)";p.style.fontWeight="800";$("#fJoin").after(p)}p.textContent=msg}
+
+function leave(){try{net&&net.room.leave()}catch(e){}net=null;inGame=false;myG=null;lastG=null;peers.clear();hostG.clear();clearInterval(tickT);$("#status").textContent="pronto";show("sJoin")}
+$$(".leave").forEach(b=>b.onclick=leave);
+$("#invite").onclick=async()=>{const url=location.href.split("#")[0]+"#"+code;
+  try{if(navigator.share){await navigator.share({title:"Rabisco Rápido",text:"Bora desenhar! Sala: "+code,url});return}}catch(e){return}
+  try{await navigator.clipboard.writeText(url);$("#invite").textContent="Link copiado!"}catch(e){$("#invite").textContent=url}
+  setTimeout(()=>$("#invite").textContent="Convidar (copiar link)",2500)};
+
+/* ---------- estado compartilhado ---------- */
+const players=()=>[{id:selfId,me:true,...myP},...[...peers].map(([id,p])=>({id,...p}))];
+const hostP=()=>players().sort((a,b)=>a.t-b.t||(a.id<b.id?-1:1))[0];
+const isHost=()=>mode==="on"&&hostP().me;
+const offset=()=>isHost()?0:(offsets.get(hostP().id)||0);
+const now=()=>Date.now()+offset();
+const colOf=p=>PCOL[hash(p.n)%PCOL.length];
+function setMe(p){Object.assign(myP,p);net&&net.sMe(myP);update()}
+function setG(g){myG=g;lastG=g;net&&net.sSt({...g,hb:Date.now()});update()}
+function offG(){const cyc=(offDur+BREAK)*1000,t=Date.now(),i=Math.floor(t/cyc),st=i*cyc;
+  return {id:"o"+i,theme:hash(code+":"+i)%TEMAS.length,dur:offDur,phase:t<st+offDur*1000?"draw":"show",end:t<st+offDur*1000?st+offDur*1000:st+cyc}}
+function G(){
+  if(mode==="off")return offG();
+  if(isHost()){if(!myG&&lastG)myG=lastG;return myG}
+  const g=hostG.get(hostP().id);if(g)lastG=g;return g||null;
+}
+function update(){if(inGame)render()}
+
+function show(id){for(const s of ["sJoin","sLobby","sDraw","sVote","sResult","sShow"])$("#"+s).classList.toggle("hide",s!==id)}
+function render(){
+  const g=G(),ph=g?.phase||"lobby";
+  if(mode==="on")$("#status").textContent="online · "+players().length+" na sala";
+  if(ph==="lobby"){show("sLobby");renderLobby()}
+  else if(ph==="draw"){show("sDraw");enterDraw(g)}
+  else if(ph==="vote"){show("sVote");renderVote(g)}
+  else if(ph==="result"){show("sResult");renderResult(g)}
+  else if(ph==="show"){show("sShow");renderShow(g)}
+}
+function chips(el,busy){const h=hostP();el.innerHTML=mode==="off"?"":players().map(p=>`<span class="pl${busy&&busy(p)?" busy":""}"><span class="dot" style="background:${colOf(p)}"></span>${esc(p.n)}${p.me?" (você)":""}${h===p||h.id===p.id?" ★":""}</span>`).join("")}
+function renderLobby(){
+  chips($("#lobbyPlayers"));const alone=peers.size===0;
+  $("#lookNote").textContent=alone?"Procurando amigos na sala… pode levar alguns segundos. Dá para começar sozinho também.":"Todo mundo que entrar com o código “"+code+"” aparece aqui.";
+  $("#hostBox").classList.toggle("hide",!isHost());$("#waitHost").classList.toggle("hide",isHost());
+}
+function startRound(){
+  const used=(lastG?.used||[]).slice(-30);let i,k=0;do{i=Math.floor(Math.random()*TEMAS.length)}while(used.includes(i)&&k++<60);
+  const dur=+$("#dur").value||120;myP.v=null;
+  setG({id:Math.random().toString(36).slice(2,8),phase:"draw",theme:i,dur,end:Date.now()+dur*1000,s:lastG?.s||{},used:[...used,i]});
+}
+$("#start").onclick=startRound;$("#next").onclick=startRound;
+
+/* ---------- desenho ---------- */
+const cv=$("#cv"),ctx=cv.getContext("2d");
+let strokes=[],cur=null,color=COLORS[0],size=8,erase=false,drawRound=null,sent={};
+function redraw(){ctx.fillStyle="#fff";ctx.fillRect(0,0,800,600);for(const s of strokes)paint(s)}
+function paint(s){ctx.strokeStyle=s.c;ctx.fillStyle=s.c;ctx.lineWidth=s.w;ctx.lineCap="round";ctx.lineJoin="round";const p=s.p;if(p.length===1){ctx.beginPath();ctx.arc(p[0][0],p[0][1],s.w/2,0,7);ctx.fill();return}ctx.beginPath();ctx.moveTo(p[0][0],p[0][1]);for(let i=1;i<p.length;i++)ctx.lineTo(p[i][0],p[i][1]);ctx.stroke()}
+const pos=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*800/r.width,(e.clientY-r.top)*600/r.height]};
+const canDraw=()=>{const g=G();return g&&g.phase==="draw"&&now()<g.end};
+cv.addEventListener("pointerdown",e=>{if(!canDraw())return;cv.setPointerCapture(e.pointerId);cur={c:erase?"#fff":color,w:erase?size*3:size,p:[pos(e)]};strokes.push(cur);paint(cur);const g=G();if(mode==="on"&&myP.d!==g.id)setMe({d:g.id})});
+cv.addEventListener("pointermove",e=>{if(!cur)return;const q=pos(e),l=cur.p[cur.p.length-1];cur.p.push(q);ctx.strokeStyle=cur.c;ctx.lineWidth=cur.w;ctx.lineCap="round";ctx.beginPath();ctx.moveTo(l[0],l[1]);ctx.lineTo(q[0],q[1]);ctx.stroke()});
+const endS=()=>{cur=null};cv.addEventListener("pointerup",endS);cv.addEventListener("pointercancel",endS);
+function buildTools(){
+  $("#tools").innerHTML=COLORS.map(c=>`<button class="sw${c===color&&!erase?" on":""}" data-c="${c}" style="background:${c}" aria-label="cor ${c}"></button>`).join("")
+  +[4,8,16].map(w=>`<button class="sz${w===size?" on":""}" data-w="${w}" aria-label="traço ${w}"><i style="width:${w+2}px;height:${w+2}px"></i></button>`).join("")
+  +`<button class="tl${erase?" on":""}" data-t="erase">Borracha</button><span class="sep"></span><button data-t="undo">Desfazer</button><button data-t="clear">Limpar</button>`;
+}
+$("#tools").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.c){color=b.dataset.c;erase=false}else if(b.dataset.w)size=+b.dataset.w;
+  else if(b.dataset.t==="erase")erase=!erase;else if(b.dataset.t==="undo"&&canDraw()){strokes.pop();redraw()}else if(b.dataset.t==="clear"&&canDraw()){strokes=[];redraw()}
+  buildTools()});
+function enterDraw(g){
+  if(drawRound!==g.id){drawRound=g.id;strokes=[];redraw();buildTools()}
+  $("#theme").textContent=TEMAS[g.theme]||"Tema surpresa";
+  chips($("#drawPlayers"),p=>p.d===g.id);
+}
+function snapshot(){const o=document.createElement("canvas");o.width=400;o.height=300;const c=o.getContext("2d");c.fillStyle="#fff";c.fillRect(0,0,400,300);c.drawImage(cv,0,0,400,300);return o.toDataURL("image/jpeg",.65)}
+function submitArt(g){
+  if(!g||sent[g.id]||drawRound!==g.id||!strokes.length)return;
+  sent[g.id]=true;const u=snapshot();(arts[g.id]??={})[selfId]=u;
+  if(net){net.sArt({r:g.id,u});setTimeout(()=>net&&net.sArt({r:g.id,u}),2000)}
+  render();
+}
+$$(".save").forEach(b=>b.onclick=()=>{if(!strokes.length)return;const g=G();cv.toBlob(bl=>{const a=document.createElement("a");a.href=URL.createObjectURL(bl);a.download="rabisco-"+(TEMAS[g?.theme]||"desenho").toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g,"-")+".png";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000)},"image/png")});
+
+/* ---------- votação e resultado ---------- */
+const artists=g=>players().filter(p=>p.d===g.id);
+function renderVote(g){
+  $("#vTheme").textContent=TEMAS[g.theme]||"";
+  const mine=myP.v?.r===g.id?myP.v.p:null,list=artists(g);
+  $("#vNote").textContent=list.length<2?"Só tem um desenho nesta rodada — sem votação.":(mine?"Voto registrado! Dá para trocar até o tempo acabar.":"Toque no desenho favorito (não vale votar no seu).");
+  $("#gal").innerHTML=list.length?list.map(p=>{const u=arts[g.id]?.[p.id];
+    return `<button class="art${p.me?" mine":""}${mine===p.id?" voted":""}" data-p="${esc(p.id)}" ${p.me?"disabled":""}>${u?`<img alt="Desenho de ${esc(p.n)}" src="${u}">`:`<span class="wait">recebendo desenho…</span>`}<b><span>${esc(p.n)}${p.me?" (você)":""}</span><span>${mine===p.id?"seu voto":""}</span></b></button>`}).join(""):`<p class="note">Ninguém desenhou nesta rodada.</p>`;
+}
+$("#gal").addEventListener("click",e=>{const b=e.target.closest(".art"),g=G();if(!b||b.disabled||!g||g.phase!=="vote")return;setMe({v:{r:g.id,p:b.dataset.p}})});
+function renderResult(g){
+  const rows=Object.entries(g.s||{}).sort((a,b)=>b[1]-a[1]),w=g.w,u=w&&arts[g.id]?.[w.p];
+  $("#rTitle").textContent=w?(w.v?`${w.n} levou a rodada com ${w.v} voto${w.v>1?"s":""}!`:`Desenho de ${w.n}`):"Rodada sem votos";
+  $("#rArt").innerHTML=u?`<img alt="Desenho vencedor" src="${u}"><p class="note hand big">“${esc(TEMAS[g.theme]||"")}” por ${esc(w.n)}</p>`:`<p class="note">Tema: ${esc(TEMAS[g.theme]||"")}</p>`;
+  $("#rTable").innerHTML=rows.length?rows.map(([n,v])=>`<tr><td>${esc(n)}</td><td>${+v||0} pt${v==1?"":"s"}</td></tr>`).join(""):`<tr><td>Ninguém pontuou ainda</td><td></td></tr>`;
+  $("#next").classList.toggle("hide",!isHost());$("#rWait").classList.toggle("hide",isHost());
+}
+function renderShow(g){
+  $("#shTheme").textContent=TEMAS[g.theme]||"";
+  const u=drawRound===g.id&&strokes.length?(arts[g.id]?.[selfId]||snapshot()):null;
+  $("#shArt").innerHTML=u?`<img alt="Seu desenho" src="${u}">`:`<p class="note">Você não desenhou nesta rodada. A próxima começa sozinha!</p>`;
+}
+function finishVote(g,list){
+  const tally={};for(const p of players()){const v=p.v;if(v?.r===g.id&&v.p!==p.id&&list.some(a=>a.id===v.p))tally[v.p]=(tally[v.p]||0)+1}
+  const s={...(g.s||{})};let w=null;
+  for(const a of list){s[a.n]=(s[a.n]||0)+(tally[a.id]||0);if((tally[a.id]||0)>0&&(!w||tally[a.id]>w.v))w={p:a.id,n:a.n,v:tally[a.id]}}
+  if(!w&&list.length===1)w={p:list[0].id,n:list[0].n,v:0};
+  setG({...g,phase:"result",s:Object.fromEntries(Object.entries(s).sort((a,b)=>b[1]-a[1]).slice(0,20)),w});
+}
+
+/* ---------- relógio ---------- */
+let lastPh="";
+function tick(){
+  if(!inGame)return;
+  if(isHost()&&net&&myG&&Date.now()-hbAt>2000){hbAt=Date.now();net.sSt({...myG,hb:Date.now()})}
+  const g=G();if(!g)return;const t=now();
+  if(mode==="off"&&g.id+g.phase!==lastPh){lastPh=g.id+g.phase;if(g.phase==="show"&&drawRound===g.id&&strokes.length&&!arts[g.id]?.[selfId])(arts[g.id]??={})[selfId]=snapshot();render()}
+  if(g.phase==="draw"){
+    const left=g.end-t;$("#timer").textContent=fmt(left);$("#timer").classList.toggle("hot",left<15000);
+    $("#barFill").style.width=Math.max(0,Math.min(100,left/(g.dur*10)))+"%";$("#pad").classList.toggle("done",left<=0);
+    if(mode==="on"){if(left<=0)submitArt(g);if(isHost()&&left<=-1500)setG({...g,phase:"vote",end:Date.now()+45000})}
+  }else if(g.phase==="vote"){
+    submitArt(g);const left=g.end-t;$("#vTimer").textContent=fmt(left);$("#vTimer").classList.toggle("hot",left<10000);
+    if(isHost()){const list=artists(g),voters=players().filter(p=>list.some(a=>a.id!==p.id));
+      if(left<=0||list.length<2||voters.every(p=>p.v?.r===g.id))finishVote(g,list)}
+  }else if(g.phase==="show"){$("#shTimer").textContent=fmt(g.end-t)}
+}
+}
+if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+</script>
+</body>
+</html>
