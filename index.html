@@ -189,7 +189,7 @@ $("#fJoin").addEventListener("submit",async e=>{
       net={room,sMe,sSt,sArt};
       gMe((d,id)=>{if(!d||typeof d!=="object")return;peers.set(id,{n:clean(d.n),t:+d.t||Date.now(),d:typeof d.d==="string"?d.d:null,v:d.v&&typeof d.v==="object"?{r:String(d.v.r),p:String(d.v.p)}:null});update()});
       gSt((g,id)=>{if(!g||typeof g!=="object"||typeof g.id!=="string")return;hostG.set(id,g);if(typeof g.hb==="number")offsets.set(id,g.hb-Date.now());update()});
-      gArt((d,id)=>{if(d&&typeof d.r==="string"&&okImg(d.u)){(arts[d.r]??={})[id]=d.u;render()}});
+      gArt((d,id)=>{if(d&&typeof d.r==="string"&&okImg(d.u)){(arts[d.r]||(arts[d.r]={}))[id]=d.u;render()}});
       room.onPeerJoin(id=>{sMe(myP,id);if(isHost()&&myG)sSt({...myG,hb:Date.now()},id);const r=G()?.id,u=r&&arts[r]?.[selfId];if(u)sArt({r,u},id)});
       room.onPeerLeave(id=>{peers.delete(id);hostG.delete(id);update()});
     }catch(err){
@@ -278,7 +278,7 @@ function enterDraw(g){
 function snapshot(){const o=document.createElement("canvas");o.width=400;o.height=300;const c=o.getContext("2d");c.fillStyle="#fff";c.fillRect(0,0,400,300);c.drawImage(cv,0,0,400,300);return o.toDataURL("image/jpeg",.65)}
 function submitArt(g){
   if(!g||sent[g.id]||drawRound!==g.id||!strokes.length)return;
-  sent[g.id]=true;const u=snapshot();(arts[g.id]??={})[selfId]=u;
+  sent[g.id]=true;const u=snapshot();(arts[g.id]||(arts[g.id]={}))[selfId]=u;
   if(net){net.sArt({r:g.id,u});setTimeout(()=>net&&net.sArt({r:g.id,u}),2000)}
   render();
 }
@@ -320,7 +320,7 @@ function tick(){
   if(!inGame)return;
   if(isHost()&&net&&myG&&Date.now()-hbAt>2000){hbAt=Date.now();net.sSt({...myG,hb:Date.now()})}
   const g=G();if(!g)return;const t=now();
-  if(mode==="off"&&g.id+g.phase!==lastPh){lastPh=g.id+g.phase;if(g.phase==="show"&&drawRound===g.id&&strokes.length&&!arts[g.id]?.[selfId])(arts[g.id]??={})[selfId]=snapshot();render()}
+  if(mode==="off"&&g.id+g.phase!==lastPh){lastPh=g.id+g.phase;if(g.phase==="show"&&drawRound===g.id&&strokes.length&&!arts[g.id]?.[selfId])(arts[g.id]||(arts[g.id]={}))[selfId]=snapshot();render()}
   if(g.phase==="draw"){
     const left=g.end-t;$("#timer").textContent=fmt(left);$("#timer").classList.toggle("hot",left<15000);
     $("#barFill").style.width=Math.max(0,Math.min(100,left/(g.dur*10)))+"%";$("#pad").classList.toggle("done",left<=0);
